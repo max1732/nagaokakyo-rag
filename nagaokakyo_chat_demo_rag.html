@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENSE長岡京 AIチャット</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: #f0f2f5;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* --- ヘッダー --- */
+  header {
+    background: linear-gradient(135deg, #2d8b5e, #1a6b42);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header .subtitle { font-size: 11px; opacity: .8; margin-top: 2px; }
+
+  /* --- モード切替 --- */
+  .mode-switch {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .mode-btn {
+    padding: 6px 14px;
+    border: 1.5px solid rgba(255,255,255,.5);
+    border-radius: 20px;
+    background: transparent;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .mode-btn:hover {
+    background: rgba(255,255,255,.2);
+  }
+  .mode-btn.active {
+    background: #fff;
+    color: #1a6b42;
+    border-color: #fff;
+    font-weight: 600;
+  }
+
+  /* --- チャットエリア --- */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: #2d8b5e;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.bot {
+    align-self: flex-start;
+    background: #fff;
+    color: #333;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+
+  /* --- 参考リンク --- */
+  .sources {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e8e8e8;
+  }
+  .sources a {
+    display: block;
+    font-size: 11px;
+    color: #2d8b5e;
+    text-decoration: none;
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+  .sources a:hover { text-decoration: underline; }
+
+  /* --- ローディング --- */
+  .typing {
+    align-self: flex-start;
+    background: #fff;
+    padding: 12px 20px;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .typing span {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #aaa;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: bounce .6s infinite alternate;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { to { opacity: .3; transform: translateY(-4px); } }
+
+  /* --- 入力エリア --- */
+  .input-area {
+    padding: 12px 16px;
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1.5px solid #ddd;
+    border-radius: 24px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .input-area input:focus { border-color: #2d8b5e; }
+  .input-area button {
+    padding: 10px 20px;
+    background: #2d8b5e;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .input-area button:hover { background: #246e4a; }
+  .input-area button:disabled { background: #aaa; cursor: default; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>SENSE長岡京 AIチャット</h1>
+    <div class="subtitle">長岡京市の観光・グルメ情報をAIがご案内</div>
+  </div>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="line">LINE</button>
+    <button class="mode-btn" data-mode="ig">IG</button>
+  </div>
+</header>
+
+<div class="chat-area" id="chatArea">
+  <div class="msg bot">こんにちは！長岡京市の観光・グルメ情報をご案内します。何でも聞いてくださいね。</div>
+</div>
+
+<div class="input-area">
+  <input type="text" id="userInput" placeholder="例：長岡京でおすすめのランチは？" autocomplete="off">
+  <button id="sendBtn">送信</button>
+</div>
+
+<script>
+const API_URL = "http://localhost:3000/api/chat";
+let currentMode = "line";
+
+// --- モード切替 ---
+document.querySelector(".mode-switch").addEventListener("click", (e) => {
+  const btn = e.target.closest(".mode-btn");
+  if (!btn) return;
+  document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentMode = btn.dataset.mode;
+  console.log("mode changed:", currentMode);
+});
+
+// --- メッセージ表示 ---
+function addMessage(text, role, sources) {
+  const chatArea = document.getElementById("chatArea");
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+
+  if (role === "bot" && sources && sources.length > 0) {
+    const srcDiv = document.createElement("div");
+    srcDiv.className = "sources";
+    sources.forEach(s => {
+      const a = document.createElement("a");
+      a.href = s.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "\u{1F4CE} \u53C2\u8003\uFF1A" + s.title;
+      srcDiv.appendChild(a);
+    });
+    div.appendChild(srcDiv);
+  }
+
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+  const chatArea = document.getElementById("chatArea");
+  const div = document.createElement("div");
+  div.className = "typing";
+  div.id = "typingIndicator";
+  div.innerHTML = "<span></span><span></span><span></span>";
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+// --- 送信処理 ---
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const btn = document.getElementById("sendBtn");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+  btn.disabled = true;
+  showTyping();
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, mode: currentMode }),
+    });
+
+    removeTyping();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    addMessage(data.reply, "bot", data.sources);
+  } catch (e) {
+    removeTyping();
+    addMessage("\u26A0 \u30A8\u30E9\u30FC: " + e.message, "bot");
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+// --- イベント ---
+document.getElementById("sendBtn").addEventListener("click", sendMessage);
+document.getElementById("userInput").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.isComposing) sendMessage();
+});
+</script>
+</body>
+</html>

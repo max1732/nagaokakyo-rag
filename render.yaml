@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: nagaokakyo-rag
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node chat_server.mjs
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production

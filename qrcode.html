@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENSE長岡京 AIチャット QRコード</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: #f5f5f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.1);
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+  }
+  .logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a6b42;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 32px;
+  }
+  #qrcode {
+    display: inline-block;
+    padding: 16px;
+    background: #fff;
+    border-radius: 12px;
+    border: 2px solid #e8e8e8;
+    margin-bottom: 24px;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #qrcode img { display: block; }
+  .placeholder {
+    color: #aaa;
+    font-size: 13px;
+  }
+  .url-display {
+    font-size: 12px;
+    color: #2d8b5e;
+    word-break: break-all;
+    margin-bottom: 24px;
+    min-height: 18px;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+  }
+  .input-row input:focus { border-color: #2d8b5e; }
+  .input-row button {
+    padding: 10px 20px;
+    background: #2d8b5e;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .input-row button:hover { background: #1a5a38; }
+  .footer {
+    font-size: 11px;
+    color: #999;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">SENSE長岡京 AIチャットを体験</div>
+  <div class="subtitle">スマートフォンでQRコードを読み取ってください</div>
+
+  <div id="qrcode">
+    <div class="placeholder">ngrok URLを入力してください</div>
+  </div>
+
+  <div class="url-display" id="urlDisplay"></div>
+
+  <div class="input-row">
+    <input type="text" id="urlInput" placeholder="https://xxxx.ngrok-free.app">
+    <button id="genBtn">生成</button>
+  </div>
+
+  <div class="footer">ngrok http 3000 で表示されたURLを貼り付けてください</div>
+</div>
+
+<script>
+let qr = null;
+
+function generateQR() {
+  let url = document.getElementById("urlInput").value.trim();
+  if (!url) return;
+  if (!url.startsWith("http")) url = "https://" + url;
+
+  // チャットページのURL（/api/chatではなくHTMLを開く）
+  const chatUrl = url.replace(/\/+$/, "");
+
+  const container = document.getElementById("qrcode");
+  container.innerHTML = "";
+
+  qr = new QRCode(container, {
+    text: chatUrl,
+    width: 200,
+    height: 200,
+    colorDark: "#1a6b42",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+
+  document.getElementById("urlDisplay").textContent = chatUrl;
+}
+
+document.getElementById("genBtn").addEventListener("click", generateQR);
+document.getElementById("urlInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") generateQR();
+});
+</script>
+</body>
+</html>
