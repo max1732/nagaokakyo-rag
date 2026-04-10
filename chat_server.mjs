@@ -138,15 +138,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// 静的ファイル配信
+app.use(express.static(join(__dirname, "public")));
+
 app.get("/", (_req, res) => {
+  res.sendFile(join(__dirname, "public", "index.html"));
+});
+
+app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    message: "SENSE長岡京 RAG Chat Server",
     articles: db.articles.length,
-    endpoints: {
-      chat: "POST /api/chat { message, mode?: 'line'|'ig' }",
-      search: "GET /api/search?q=キーワード",
-    },
   });
 });
 
